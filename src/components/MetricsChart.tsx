@@ -13,9 +13,9 @@ const MetricsChart = () => {
         newData.shift(); // Remove oldest point
         newData.push({
           timestamp: Date.now(),
-          cpu: Math.max(5, Math.min(95, 25 + (Math.random() - 0.5) * 20)),
-          memory: Math.max(10, Math.min(90, 45 + (Math.random() - 0.5) * 15)),
-          temperature: Math.max(35, Math.min(80, 50 + (Math.random() - 0.5) * 10))
+          centralProcessingUnitUsagePercentage: Math.max(5, Math.min(95, 25 + (Math.random() - 0.5) * 20)),
+          randomAccessMemoryUsagePercentage: Math.max(10, Math.min(90, 45 + (Math.random() - 0.5) * 15)),
+          temperatureCelsius: Math.max(35, Math.min(80, 50 + (Math.random() - 0.5) * 10))
         });
         return newData;
       });
@@ -46,13 +46,14 @@ const MetricsChart = () => {
           <Tooltip 
             labelFormatter={(value) => `Time: ${formatTime(value as number)}`}
             formatter={(value: any, name: string) => [
-              `${Math.round(value)}${name === 'temperature' ? '°C' : '%'}`,
-              name.charAt(0).toUpperCase() + name.slice(1)
+              `${Math.round(value)}${name === 'temperatureCelsius' ? '°C' : '%'}`,
+              name === 'centralProcessingUnitUsagePercentage' ? 'CPU Usage' : 
+              name === 'randomAccessMemoryUsagePercentage' ? 'Memory Usage' : 'Temperature'
             ]}
           />
           <Line 
             type="monotone" 
-            dataKey="cpu" 
+            dataKey="centralProcessingUnitUsagePercentage" 
             stroke="hsl(217 91% 60%)" 
             strokeWidth={2}
             dot={false}
@@ -60,7 +61,7 @@ const MetricsChart = () => {
           />
           <Line 
             type="monotone" 
-            dataKey="memory" 
+            dataKey="randomAccessMemoryUsagePercentage" 
             stroke="hsl(142 76% 36%)" 
             strokeWidth={2}
             dot={false}
@@ -68,7 +69,7 @@ const MetricsChart = () => {
           />
           <Line 
             type="monotone" 
-            dataKey="temperature" 
+            dataKey="temperatureCelsius" 
             stroke="hsl(0 84% 60%)" 
             strokeWidth={2}
             dot={false}

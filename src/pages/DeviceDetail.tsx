@@ -13,7 +13,7 @@ import GeoMap from "@/components/GeoMap";
 const DeviceDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [device, setDevice] = useState(mockDevices.find(d => d.id === id));
+  const [device, setDevice] = useState(mockDevices.find(d => d.deviceIdentifier === id));
   const [systemInfo] = useState(mockSystemInfo);
   const [networkInfo] = useState(mockNetworkInfo);
   const [processes] = useState(mockProcesses);
@@ -24,9 +24,9 @@ const DeviceDetail = () => {
       if (device) {
         setDevice(prev => prev ? {
           ...prev,
-          cpu_usage: Math.max(5, Math.min(95, prev.cpu_usage + (Math.random() - 0.5) * 10)),
-          ram_usage: Math.max(10, Math.min(90, prev.ram_usage + (Math.random() - 0.5) * 8)),
-          temperature: Math.max(35, Math.min(80, prev.temperature + (Math.random() - 0.5) * 4))
+          centralProcessingUnitUsagePercentage: Math.max(5, Math.min(95, prev.centralProcessingUnitUsagePercentage + (Math.random() - 0.5) * 10)),
+          randomAccessMemoryUsagePercentage: Math.max(10, Math.min(90, prev.randomAccessMemoryUsagePercentage + (Math.random() - 0.5) * 8)),
+          temperatureCelsius: Math.max(35, Math.min(80, prev.temperatureCelsius + (Math.random() - 0.5) * 4))
         } : null);
       }
     }, 2000);
@@ -55,15 +55,15 @@ const DeviceDetail = () => {
           </Button>
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold">{device.hostname}</h1>
-              <div className={`status-indicator ${device.status === 'online' ? 'status-online' : 'status-offline'}`} />
-              <Badge variant={device.status === 'online' ? 'default' : 'destructive'}>
-                {device.status}
+              <h1 className="text-3xl font-bold">{device.hostName}</h1>
+              <div className={`status-indicator ${device.connectionStatus === 'online' ? 'status-online' : 'status-offline'}`} />
+              <Badge variant={device.connectionStatus === 'online' ? 'default' : 'destructive'}>
+                {device.connectionStatus}
               </Badge>
             </div>
             <div className="flex items-center gap-2 text-muted-foreground">
               <MapPin className="w-4 h-4" />
-              {device.location} • Last seen: {device.last_seen}
+              {device.locationLabel} • Last seen: {new Date(device.lastSeenTimestampIso8601).toLocaleString()}
             </div>
           </div>
         </div>
@@ -74,10 +74,10 @@ const DeviceDetail = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <Cpu className="w-8 h-8 text-primary" />
-                <div className={`status-indicator ${device.cpu_usage > 80 ? 'status-offline' : device.cpu_usage > 60 ? 'status-warning' : 'status-online'}`} />
+                <div className={`status-indicator ${device.centralProcessingUnitUsagePercentage > 80 ? 'status-offline' : device.centralProcessingUnitUsagePercentage > 60 ? 'status-warning' : 'status-online'}`} />
               </div>
               <p className="text-sm font-medium text-muted-foreground mb-1">CPU Usage</p>
-              <p className="metric-value">{Math.round(device.cpu_usage)}%</p>
+              <p className="metric-value">{Math.round(device.centralProcessingUnitUsagePercentage)}%</p>
             </CardContent>
           </Card>
 
@@ -85,10 +85,10 @@ const DeviceDetail = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <Monitor className="w-8 h-8 text-primary" />
-                <div className={`status-indicator ${device.ram_usage > 80 ? 'status-offline' : device.ram_usage > 60 ? 'status-warning' : 'status-online'}`} />
+                <div className={`status-indicator ${device.randomAccessMemoryUsagePercentage > 80 ? 'status-offline' : device.randomAccessMemoryUsagePercentage > 60 ? 'status-warning' : 'status-online'}`} />
               </div>
               <p className="text-sm font-medium text-muted-foreground mb-1">RAM Usage</p>
-              <p className="metric-value">{Math.round(device.ram_usage)}%</p>
+              <p className="metric-value">{Math.round(device.randomAccessMemoryUsagePercentage)}%</p>
             </CardContent>
           </Card>
 
@@ -96,10 +96,10 @@ const DeviceDetail = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <HardDrive className="w-8 h-8 text-primary" />
-                <div className={`status-indicator ${device.disk_usage > 80 ? 'status-offline' : device.disk_usage > 60 ? 'status-warning' : 'status-online'}`} />
+                <div className={`status-indicator ${device.diskUsagePercentage > 80 ? 'status-offline' : device.diskUsagePercentage > 60 ? 'status-warning' : 'status-online'}`} />
               </div>
               <p className="text-sm font-medium text-muted-foreground mb-1">Disk Usage</p>
-              <p className="metric-value">{Math.round(device.disk_usage)}%</p>
+              <p className="metric-value">{Math.round(device.diskUsagePercentage)}%</p>
             </CardContent>
           </Card>
 
@@ -107,10 +107,10 @@ const DeviceDetail = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <Thermometer className="w-8 h-8 text-primary" />
-                <div className={`status-indicator ${device.temperature > 70 ? 'status-offline' : device.temperature > 60 ? 'status-warning' : 'status-online'}`} />
+                <div className={`status-indicator ${device.temperatureCelsius > 70 ? 'status-offline' : device.temperatureCelsius > 60 ? 'status-warning' : 'status-online'}`} />
               </div>
               <p className="text-sm font-medium text-muted-foreground mb-1">Temperature</p>
-              <p className="metric-value">{Math.round(device.temperature)}°C</p>
+              <p className="metric-value">{Math.round(device.temperatureCelsius)}°C</p>
             </CardContent>
           </Card>
         </div>
@@ -130,30 +130,30 @@ const DeviceDetail = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Operating System</p>
-                    <p className="font-medium">{systemInfo.os}</p>
+                    <p className="font-medium">{systemInfo.operatingSystem}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Kernel</p>
-                    <p className="font-mono text-sm">{systemInfo.kernel}</p>
+                    <p className="font-mono text-sm">{systemInfo.kernelVersion}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">CPU</p>
-                    <p className="font-medium">{systemInfo.cpu}</p>
+                    <p className="font-medium">{systemInfo.centralProcessingUnitModel}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">RAM</p>
-                    <p className="font-medium">{systemInfo.ram}</p>
+                    <p className="font-medium">{systemInfo.randomAccessMemoryTotalGigabytes} GB</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Uptime</p>
                     <p className="font-mono text-sm flex items-center gap-1">
                       <Clock className="w-4 h-4" />
-                      {systemInfo.uptime}
+                      {Math.floor(systemInfo.uptimeSeconds / 86400)} days, {Math.floor((systemInfo.uptimeSeconds % 86400) / 3600)} hours
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Load Average</p>
-                    <p className="font-mono text-sm">{systemInfo.loadAvg}</p>
+                    <p className="font-mono text-sm">{systemInfo.systemLoadAverage.join(', ')}</p>
                   </div>
                 </div>
               </CardContent>
@@ -183,28 +183,28 @@ const DeviceDetail = () => {
                     <div key={index} className="border rounded-lg p-4">
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="font-medium flex items-center gap-2">
-                          {iface.name} ({iface.type})
-                          <Badge variant={iface.status === 'up' ? 'default' : 'secondary'}>
-                            {iface.status}
+                          {iface.interfaceName} ({iface.interfaceType})
+                          <Badge variant={iface.operationalState === 'up' ? 'default' : 'secondary'}>
+                            {iface.operationalState}
                           </Badge>
                         </h4>
                       </div>
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <p className="text-muted-foreground">IPv4 Address</p>
-                          <p className="font-mono">{iface.ipv4}</p>
+                          <p className="font-mono">{iface.internetProtocolAddressV4}</p>
                         </div>
                         <div>
                           <p className="text-muted-foreground">Gateway</p>
-                          <p className="font-mono">{iface.gateway}</p>
+                          <p className="font-mono">{iface.defaultGateway}</p>
                         </div>
                         <div>
                           <p className="text-muted-foreground">DNS Servers</p>
-                          <p className="font-mono">{iface.dns.join(', ')}</p>
+                          <p className="font-mono">{iface.domainNameSystemServers.join(', ')}</p>
                         </div>
                         <div>
                           <p className="text-muted-foreground">MAC Address</p>
-                          <p className="font-mono">{iface.mac}</p>
+                          <p className="font-mono">{iface.mediaAccessControlAddress}</p>
                         </div>
                       </div>
                     </div>
@@ -242,12 +242,12 @@ const DeviceDetail = () => {
                   {processes.map((process, index) => (
                     <div key={index} className="flex items-center justify-between text-sm">
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{process.name}</p>
-                        <p className="text-muted-foreground font-mono text-xs">PID: {process.pid}</p>
+                        <p className="font-medium truncate">{process.commandName}</p>
+                        <p className="text-muted-foreground font-mono text-xs">PID: {process.processIdentifier}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-mono">{process.cpu}%</p>
-                        <p className="text-muted-foreground font-mono text-xs">{process.memory}MB</p>
+                        <p className="font-mono">{process.centralProcessingUnitPercentage}%</p>
+                        <p className="text-muted-foreground font-mono text-xs">{process.memoryPercentage}%</p>
                       </div>
                     </div>
                   ))}

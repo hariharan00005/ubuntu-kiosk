@@ -1,150 +1,307 @@
 
 // Mock data for the monitoring system
 export interface Device {
-  id: string;
-  hostname: string;
-  status: 'online' | 'offline';
-  location: string;
-  cpu_usage: number;
-  ram_usage: number;
-  disk_usage: number;
-  temperature: number;
-  last_seen: string;
-  ip_address: string;
-  os: string;
-  geo?: {
-    lat: number;
-    lon: number;
+  deviceIdentifier: string;
+  hostName: string;
+  connectionStatus: 'online' | 'offline';
+  locationLabel: string;
+  hierarchicalLabels: string[];
+  centralProcessingUnitUsagePercentage: number;
+  randomAccessMemoryUsagePercentage: number;
+  diskUsagePercentage: number;
+  temperatureCelsius: number;
+  lastSeenTimestampIso8601: string;
+  internetProtocolAddressV4: string;
+  operatingSystem: string;
+  geolocation?: {
+    latitude: number;
+    longitude: number;
     city: string;
+    region: string;
     country: string;
+    internetProtocolAddressPublic: string;
+  };
+}
+
+export interface DeviceDetail {
+  device: {
+    deviceIdentifier: string;
+    customDisplayName: string;
+    labels: Record<string, string>;
+    registrationTimestampIso8601: string | null;
+  };
+  systemInformation: {
+    hostName: string;
+    operatingSystem: string;
+    kernelVersion: string;
+    uptimeSeconds: number;
+  };
+  hardwareInformation: {
+    centralProcessingUnitModel: string;
+    centralProcessingUnitCoreCount: number;
+    randomAccessMemoryTotalGigabytes: number;
+    storageDevices: Array<{
+      deviceName: string;
+      sizeGigabytes: number;
+    }>;
+  };
+  networkInformation: {
+    online: boolean;
+    interfaces: Array<{
+      interfaceName: string;
+      interfaceType: string;
+      operationalState: string;
+      internetProtocolAddressV4: string;
+      internetProtocolAddressV6: string | null;
+      defaultGateway: string;
+      domainNameSystemServers: string[];
+      mediaAccessControlAddress: string;
+    }>;
+  };
+  geolocationInformation: {
+    city: string;
+    region: string;
+    country: string;
+    latitude: number;
+    longitude: number;
+    internetProtocolAddressPublic: string;
+    provider: string;
+  };
+  currentMetrics: {
+    timestampIso8601: string;
+    centralProcessingUnitUsagePercentage: number;
+    systemLoadAverage: [number, number, number];
+    memory: {
+      totalMegabytes: number;
+      usedMegabytes: number;
+      usedPercentage: number;
+    };
+    diskUsage: Array<{
+      mountPoint: string;
+      usedPercentage: number;
+    }>;
+    temperatureCelsius: number;
+    topProcesses: Array<{
+      processIdentifier: number;
+      commandName: string;
+      centralProcessingUnitPercentage: number;
+      memoryPercentage: number;
+    }>;
   };
 }
 
 export const mockDevices: Device[] = [
   {
-    id: '1',
-    hostname: 'ub-mini-01',
-    status: 'online',
-    location: 'Bengaluru Office',
-    cpu_usage: 24.5,
-    ram_usage: 67.2,
-    disk_usage: 41.7,
-    temperature: 52.0,
-    last_seen: 'Just now',
-    ip_address: '192.168.1.50',
-    os: 'Ubuntu 22.04.4 LTS',
-    geo: { lat: 12.9716, lon: 77.5946, city: 'Bengaluru', country: 'India' }
+    deviceIdentifier: '1',
+    hostName: 'ub-mini-01',
+    connectionStatus: 'online',
+    locationLabel: 'Bengaluru Office',
+    hierarchicalLabels: ['India', 'Karnataka', 'Bengaluru'],
+    centralProcessingUnitUsagePercentage: 24.5,
+    randomAccessMemoryUsagePercentage: 67.2,
+    diskUsagePercentage: 41.7,
+    temperatureCelsius: 52.0,
+    lastSeenTimestampIso8601: '2025-01-09T12:34:10Z',
+    internetProtocolAddressV4: '192.168.1.50',
+    operatingSystem: 'Ubuntu 22.04.4 LTS',
+    geolocation: { latitude: 12.9716, longitude: 77.5946, city: 'Bengaluru', region: 'KA', country: 'IN', internetProtocolAddressPublic: '49.xx.xx.xx' }
   },
   {
-    id: '2',
-    hostname: 'ub-mini-02',
-    status: 'online',
-    location: 'Mumbai Branch',
-    cpu_usage: 18.3,
-    ram_usage: 45.8,
-    disk_usage: 32.1,
-    temperature: 48.5,
-    last_seen: '2 minutes ago',
-    ip_address: '192.168.1.51',
-    os: 'Ubuntu 22.04.4 LTS',
-    geo: { lat: 19.0760, lon: 72.8777, city: 'Mumbai', country: 'India' }
+    deviceIdentifier: '2',
+    hostName: 'ub-mini-02',
+    connectionStatus: 'online',
+    locationLabel: 'Mumbai Branch',
+    hierarchicalLabels: ['India', 'Maharashtra', 'Mumbai'],
+    centralProcessingUnitUsagePercentage: 18.3,
+    randomAccessMemoryUsagePercentage: 45.8,
+    diskUsagePercentage: 32.1,
+    temperatureCelsius: 48.5,
+    lastSeenTimestampIso8601: '2025-01-09T12:32:10Z',
+    internetProtocolAddressV4: '192.168.1.51',
+    operatingSystem: 'Ubuntu 22.04.4 LTS',
+    geolocation: { latitude: 19.0760, longitude: 72.8777, city: 'Mumbai', region: 'MH', country: 'IN', internetProtocolAddressPublic: '49.xx.xx.xx' }
   },
   {
-    id: '3',
-    hostname: 'ub-mini-03',
-    status: 'offline',
-    location: 'Delhi Regional',
-    cpu_usage: 0,
-    ram_usage: 0,
-    disk_usage: 28.9,
-    temperature: 0,
-    last_seen: '15 minutes ago',
-    ip_address: '192.168.1.52',
-    os: 'Ubuntu 22.04.4 LTS',
-    geo: { lat: 28.6139, lon: 77.2090, city: 'Delhi', country: 'India' }
+    deviceIdentifier: '3',
+    hostName: 'ub-mini-03',
+    connectionStatus: 'offline',
+    locationLabel: 'Delhi Regional',
+    hierarchicalLabels: ['India', 'Delhi', 'New Delhi'],
+    centralProcessingUnitUsagePercentage: 0,
+    randomAccessMemoryUsagePercentage: 0,
+    diskUsagePercentage: 28.9,
+    temperatureCelsius: 0,
+    lastSeenTimestampIso8601: '2025-01-09T12:19:10Z',
+    internetProtocolAddressV4: '192.168.1.52',
+    operatingSystem: 'Ubuntu 22.04.4 LTS',
+    geolocation: { latitude: 28.6139, longitude: 77.2090, city: 'Delhi', region: 'DL', country: 'IN', internetProtocolAddressPublic: '49.xx.xx.xx' }
   },
   {
-    id: '4',
-    hostname: 'ub-mini-04',
-    status: 'online',
-    location: 'Chennai Hub',
-    cpu_usage: 76.1,
-    ram_usage: 82.4,
-    disk_usage: 56.3,
-    temperature: 64.2,
-    last_seen: 'Just now',
-    ip_address: '192.168.1.53',
-    os: 'Ubuntu 22.04.4 LTS',
-    geo: { lat: 13.0827, lon: 80.2707, city: 'Chennai', country: 'India' }
+    deviceIdentifier: '4',
+    hostName: 'ub-mini-04',
+    connectionStatus: 'online',
+    locationLabel: 'Chennai Hub',
+    hierarchicalLabels: ['India', 'Tamil Nadu', 'Chennai'],
+    centralProcessingUnitUsagePercentage: 76.1,
+    randomAccessMemoryUsagePercentage: 82.4,
+    diskUsagePercentage: 56.3,
+    temperatureCelsius: 64.2,
+    lastSeenTimestampIso8601: '2025-01-09T12:34:10Z',
+    internetProtocolAddressV4: '192.168.1.53',
+    operatingSystem: 'Ubuntu 22.04.4 LTS',
+    geolocation: { latitude: 13.0827, longitude: 80.2707, city: 'Chennai', region: 'TN', country: 'IN', internetProtocolAddressPublic: '49.xx.xx.xx' }
   },
   {
-    id: '5',
-    hostname: 'ub-mini-05',
-    status: 'online',
-    location: 'Hyderabad Center',
-    cpu_usage: 35.7,
-    ram_usage: 58.9,
-    disk_usage: 73.2,
-    temperature: 57.1,
-    last_seen: '1 minute ago',
-    ip_address: '192.168.1.54',
-    os: 'Ubuntu 22.04.4 LTS',
-    geo: { lat: 17.3850, lon: 78.4867, city: 'Hyderabad', country: 'India' }
+    deviceIdentifier: '5',
+    hostName: 'ub-mini-05',
+    connectionStatus: 'online',
+    locationLabel: 'Hyderabad Center',
+    hierarchicalLabels: ['India', 'Telangana', 'Hyderabad'],
+    centralProcessingUnitUsagePercentage: 35.7,
+    randomAccessMemoryUsagePercentage: 58.9,
+    diskUsagePercentage: 73.2,
+    temperatureCelsius: 57.1,
+    lastSeenTimestampIso8601: '2025-01-09T12:33:10Z',
+    internetProtocolAddressV4: '192.168.1.54',
+    operatingSystem: 'Ubuntu 22.04.4 LTS',
+    geolocation: { latitude: 17.3850, longitude: 78.4867, city: 'Hyderabad', region: 'TS', country: 'IN', internetProtocolAddressPublic: '49.xx.xx.xx' }
   },
   {
-    id: '6',
-    hostname: 'ub-mini-06',
-    status: 'online',
-    location: 'Pune Office',
-    cpu_usage: 12.8,
-    ram_usage: 34.2,
-    disk_usage: 19.6,
-    temperature: 43.9,
-    last_seen: 'Just now',
-    ip_address: '192.168.1.55',
-    os: 'Ubuntu 22.04.4 LTS',
-    geo: { lat: 18.5204, lon: 73.8567, city: 'Pune', country: 'India' }
+    deviceIdentifier: '6',
+    hostName: 'ub-mini-06',
+    connectionStatus: 'online',
+    locationLabel: 'Pune Office',
+    hierarchicalLabels: ['India', 'Maharashtra', 'Pune'],
+    centralProcessingUnitUsagePercentage: 12.8,
+    randomAccessMemoryUsagePercentage: 34.2,
+    diskUsagePercentage: 19.6,
+    temperatureCelsius: 43.9,
+    lastSeenTimestampIso8601: '2025-01-09T12:34:10Z',
+    internetProtocolAddressV4: '192.168.1.55',
+    operatingSystem: 'Ubuntu 22.04.4 LTS',
+    geolocation: { latitude: 18.5204, longitude: 73.8567, city: 'Pune', region: 'MH', country: 'IN', internetProtocolAddressPublic: '49.xx.xx.xx' }
+  }
+];
+
+export const mockDeviceDetails: DeviceDetail[] = [
+  {
+    device: {
+      deviceIdentifier: '1',
+      customDisplayName: 'ub-mini-01',
+      labels: { location: 'Bengaluru Office', department: 'IT' },
+      registrationTimestampIso8601: '2025-01-01T10:00:00Z'
+    },
+    systemInformation: {
+      hostName: 'ub-mini-01',
+      operatingSystem: 'Ubuntu 22.04.4 LTS',
+      kernelVersion: '6.8.0-35-generic',
+      uptimeSeconds: 86400
+    },
+    hardwareInformation: {
+      centralProcessingUnitModel: 'Intel(R) Core(TM) i5-1145G7 @ 2.60GHz',
+      centralProcessingUnitCoreCount: 8,
+      randomAccessMemoryTotalGigabytes: 16,
+      storageDevices: [
+        { deviceName: 'nvme0n1', sizeGigabytes: 512 }
+      ]
+    },
+    networkInformation: {
+      online: true,
+      interfaces: [
+        {
+          interfaceName: 'eth0',
+          interfaceType: 'ethernet',
+          operationalState: 'up',
+          internetProtocolAddressV4: '192.168.1.50',
+          internetProtocolAddressV6: null,
+          defaultGateway: '192.168.1.1',
+          domainNameSystemServers: ['1.1.1.1', '8.8.8.8'],
+          mediaAccessControlAddress: '00:1B:44:11:3A:B7'
+        },
+        {
+          interfaceName: 'wlan0',
+          interfaceType: 'wifi',
+          operationalState: 'down',
+          internetProtocolAddressV4: 'N/A',
+          internetProtocolAddressV6: null,
+          defaultGateway: 'N/A',
+          domainNameSystemServers: [],
+          mediaAccessControlAddress: '02:42:AC:11:00:02'
+        }
+      ]
+    },
+    geolocationInformation: {
+      city: 'Bengaluru',
+      region: 'Karnataka',
+      country: 'IN',
+      latitude: 12.9716,
+      longitude: 77.5946,
+      internetProtocolAddressPublic: '49.xx.xx.xx',
+      provider: 'ipapi'
+    },
+    currentMetrics: {
+      timestampIso8601: '2025-01-09T12:34:56Z',
+      centralProcessingUnitUsagePercentage: 24.5,
+      systemLoadAverage: [0.31, 0.28, 0.22],
+      memory: {
+        totalMegabytes: 16384,
+        usedMegabytes: 4096,
+        usedPercentage: 25.0
+      },
+      diskUsage: [
+        { mountPoint: '/', usedPercentage: 41.7 },
+        { mountPoint: '/boot/efi', usedPercentage: 1.2 }
+      ],
+      temperatureCelsius: 52.0,
+      topProcesses: [
+        { processIdentifier: 1234, commandName: 'chromium-browser', centralProcessingUnitPercentage: 34.2, memoryPercentage: 12.5 },
+        { processIdentifier: 2222, commandName: 'Xorg', centralProcessingUnitPercentage: 8.5, memoryPercentage: 7.3 },
+        { processIdentifier: 3456, commandName: 'gnome-shell', centralProcessingUnitPercentage: 6.1, memoryPercentage: 5.4 },
+        { processIdentifier: 4567, commandName: 'systemd', centralProcessingUnitPercentage: 2.3, memoryPercentage: 1.5 },
+        { processIdentifier: 5678, commandName: 'NetworkManager', centralProcessingUnitPercentage: 1.8, memoryPercentage: 0.9 }
+      ]
+    }
   }
 ];
 
 export const mockSystemInfo = {
-  os: 'Ubuntu 22.04.4 LTS',
-  kernel: '6.8.0-35-generic',
-  cpu: 'Intel(R) Core(TM) i5-1145G7 @ 2.60GHz',
-  ram: '16 GB DDR4',
-  uptime: '2 days, 14 hours, 32 minutes',
-  loadAvg: '0.31, 0.28, 0.22'
+  operatingSystem: 'Ubuntu 22.04.4 LTS',
+  kernelVersion: '6.8.0-35-generic',
+  centralProcessingUnitModel: 'Intel(R) Core(TM) i5-1145G7 @ 2.60GHz',
+  randomAccessMemoryTotalGigabytes: 16,
+  uptimeSeconds: 86400,
+  systemLoadAverage: [0.31, 0.28, 0.22]
 };
 
 export const mockNetworkInfo = {
   interfaces: [
     {
-      name: 'eth0',
-      type: 'ethernet',
-      status: 'up',
-      ipv4: '192.168.1.50',
-      gateway: '192.168.1.1',
-      dns: ['1.1.1.1', '8.8.8.8'],
-      mac: '00:1B:44:11:3A:B7'
+      interfaceName: 'eth0',
+      interfaceType: 'ethernet',
+      operationalState: 'up',
+      internetProtocolAddressV4: '192.168.1.50',
+      defaultGateway: '192.168.1.1',
+      domainNameSystemServers: ['1.1.1.1', '8.8.8.8'],
+      mediaAccessControlAddress: '00:1B:44:11:3A:B7'
     },
     {
-      name: 'wlan0',
-      type: 'wifi',
-      status: 'down',
-      ipv4: 'N/A',
-      gateway: 'N/A',
-      dns: [],
-      mac: '02:42:AC:11:00:02'
+      interfaceName: 'wlan0',
+      interfaceType: 'wifi',
+      operationalState: 'down',
+      internetProtocolAddressV4: 'N/A',
+      defaultGateway: 'N/A',
+      domainNameSystemServers: [],
+      mediaAccessControlAddress: '02:42:AC:11:00:02'
     }
   ]
 };
 
 export const mockProcesses = [
-  { pid: 1234, name: 'chromium-browser', cpu: 34.2, memory: 2048 },
-  { pid: 2222, name: 'Xorg', cpu: 8.5, memory: 1200 },
-  { pid: 3456, name: 'gnome-shell', cpu: 6.1, memory: 890 },
-  { pid: 4567, name: 'systemd', cpu: 2.3, memory: 245 },
-  { pid: 5678, name: 'NetworkManager', cpu: 1.8, memory: 156 }
+  { processIdentifier: 1234, commandName: 'chromium-browser', centralProcessingUnitPercentage: 34.2, memoryPercentage: 12.5 },
+  { processIdentifier: 2222, commandName: 'Xorg', centralProcessingUnitPercentage: 8.5, memoryPercentage: 7.3 },
+  { processIdentifier: 3456, commandName: 'gnome-shell', centralProcessingUnitPercentage: 6.1, memoryPercentage: 5.4 },
+  { processIdentifier: 4567, commandName: 'systemd', centralProcessingUnitPercentage: 2.3, memoryPercentage: 1.5 },
+  { processIdentifier: 5678, commandName: 'NetworkManager', centralProcessingUnitPercentage: 1.8, memoryPercentage: 0.9 }
 ];
 
 export const generateMockMetrics = (points: number = 20) => {
@@ -155,9 +312,9 @@ export const generateMockMetrics = (points: number = 20) => {
     const timestamp = now - (i * 30000); // 30 seconds interval
     metrics.push({
       timestamp,
-      cpu: Math.max(5, Math.min(95, 25 + (Math.random() - 0.5) * 20)),
-      memory: Math.max(10, Math.min(90, 45 + (Math.random() - 0.5) * 15)),
-      temperature: Math.max(35, Math.min(80, 50 + (Math.random() - 0.5) * 10))
+      centralProcessingUnitUsagePercentage: Math.max(5, Math.min(95, 25 + (Math.random() - 0.5) * 20)),
+      randomAccessMemoryUsagePercentage: Math.max(10, Math.min(90, 45 + (Math.random() - 0.5) * 15)),
+      temperatureCelsius: Math.max(35, Math.min(80, 50 + (Math.random() - 0.5) * 10))
     });
   }
   

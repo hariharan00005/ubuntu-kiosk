@@ -13,13 +13,13 @@ const Portal = () => {
   const [devices, setDevices] = useState(mockDevices);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredDevices = devices.filter(device =>
-    device.hostname.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    device.location.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredDevices = devices.filter(device => 
+    device.hostName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    device.locationLabel.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const onlineCount = devices.filter(d => d.status === 'online').length;
-  const offlineCount = devices.filter(d => d.status === 'offline').length;
+  const onlineCount = devices.filter(d => d.connectionStatus === 'online').length;
+  const offlineCount = devices.filter(d => d.connectionStatus === 'offline').length;
 
   // Simulate real-time updates
   useEffect(() => {
@@ -27,10 +27,10 @@ const Portal = () => {
       setDevices(prevDevices =>
         prevDevices.map(device => ({
           ...device,
-          cpu_usage: Math.max(5, Math.min(95, device.cpu_usage + (Math.random() - 0.5) * 10)),
-          ram_usage: Math.max(10, Math.min(90, device.ram_usage + (Math.random() - 0.5) * 8)),
-          temperature: Math.max(35, Math.min(80, device.temperature + (Math.random() - 0.5) * 4)),
-          last_seen: device.status === 'online' ? 'Just now' : device.last_seen
+          centralProcessingUnitUsagePercentage: Math.max(5, Math.min(95, device.centralProcessingUnitUsagePercentage + (Math.random() - 0.5) * 10)),
+          randomAccessMemoryUsagePercentage: Math.max(10, Math.min(90, device.randomAccessMemoryUsagePercentage + (Math.random() - 0.5) * 8)),
+          temperatureCelsius: Math.max(35, Math.min(80, device.temperatureCelsius + (Math.random() - 0.5) * 4)),
+          lastSeenTimestampIso8601: device.connectionStatus === 'online' ? new Date().toISOString() : device.lastSeenTimestampIso8601
         }))
       );
     }, 3000);
@@ -95,7 +95,7 @@ const Portal = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Avg CPU</p>
-                  <p className="text-3xl font-bold">{Math.round(devices.reduce((acc, d) => acc + d.cpu_usage, 0) / devices.length)}%</p>
+                  <p className="text-3xl font-bold">{Math.round(devices.reduce((acc, d) => acc + d.centralProcessingUnitUsagePercentage, 0) / devices.length)}%</p>
                 </div>
                 <Activity className="w-8 h-8 text-primary" />
               </div>
@@ -124,41 +124,41 @@ const Portal = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredDevices.map((device) => (
             <Card
-              key={device.id}
+              key={device.deviceIdentifier}
               className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
-              onClick={() => navigate(`/device/${device.id}`)}
+              onClick={() => navigate(`/device/${device.deviceIdentifier}`)}
             >
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">{device.hostname}</CardTitle>
-                  <div className={`status-indicator ${device.status === 'online' ? 'status-online' : 'status-offline'}`} />
+                  <CardTitle className="text-lg">{device.hostName}</CardTitle>
+                  <div className={`status-indicator ${device.connectionStatus === 'online' ? 'status-online' : 'status-offline'}`} />
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <MapPin className="w-4 h-4" />
-                  {device.location}
+                  {device.locationLabel}
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between text-sm">
                     <span>Status</span>
-                    <Badge variant={device.status === 'online' ? 'default' : 'destructive'}>
-                      {device.status}
+                    <Badge variant={device.connectionStatus === 'online' ? 'default' : 'destructive'}>
+                      {device.connectionStatus}
                     </Badge>
                   </div>
                   
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>CPU Usage</span>
-                      <span className="font-mono">{Math.round(device.cpu_usage)}%</span>
+                      <span className="font-mono">{Math.round(device.centralProcessingUnitUsagePercentage)}%</span>
                     </div>
                     <div className="w-full bg-muted rounded-full h-2">
                       <div
                         className={`h-2 rounded-full transition-all duration-500 ${
-                          device.cpu_usage > 80 ? 'bg-status-error' :
-                          device.cpu_usage > 60 ? 'bg-status-warning' : 'bg-status-success'
+                          device.centralProcessingUnitUsagePercentage > 80 ? 'bg-status-error' :
+                          device.centralProcessingUnitUsagePercentage > 60 ? 'bg-status-warning' : 'bg-status-success'
                         }`}
-                        style={{ width: `${device.cpu_usage}%` }}
+                        style={{ width: `${device.centralProcessingUnitUsagePercentage}%` }}
                       />
                     </div>
                   </div>
@@ -166,22 +166,22 @@ const Portal = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>RAM Usage</span>
-                      <span className="font-mono">{Math.round(device.ram_usage)}%</span>
+                      <span className="font-mono">{Math.round(device.randomAccessMemoryUsagePercentage)}%</span>
                     </div>
                     <div className="w-full bg-muted rounded-full h-2">
                       <div
                         className={`h-2 rounded-full transition-all duration-500 ${
-                          device.ram_usage > 80 ? 'bg-status-error' :
-                          device.ram_usage > 60 ? 'bg-status-warning' : 'bg-primary'
+                          device.randomAccessMemoryUsagePercentage > 80 ? 'bg-status-error' :
+                          device.randomAccessMemoryUsagePercentage > 60 ? 'bg-status-warning' : 'bg-primary'
                         }`}
-                        style={{ width: `${device.ram_usage}%` }}
+                        style={{ width: `${device.randomAccessMemoryUsagePercentage}%` }}
                       />
                     </div>
                   </div>
 
                   <div className="flex justify-between text-sm pt-2 border-t">
                     <span>Last Seen</span>
-                    <span className="text-muted-foreground">{device.last_seen}</span>
+                    <span className="text-muted-foreground">{new Date(device.lastSeenTimestampIso8601).toLocaleString()}</span>
                   </div>
                 </div>
               </CardContent>

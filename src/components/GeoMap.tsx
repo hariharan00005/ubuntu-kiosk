@@ -7,7 +7,7 @@ interface GeoMapProps {
 }
 
 const GeoMap = ({ device }: GeoMapProps) => {
-  if (!device.geo) {
+  if (!device.geolocation) {
     return (
       <div className="h-48 bg-muted rounded-lg flex items-center justify-center">
         <div className="text-center text-muted-foreground">
@@ -30,26 +30,26 @@ const GeoMap = ({ device }: GeoMapProps) => {
           </div>
         </div>
         <div className="absolute bottom-4 left-4 text-white font-medium bg-black/50 px-3 py-1 rounded-lg">
-          📍 {device.geo.city}, {device.geo.country}
+          📍 {device.geolocation.city}, {device.geolocation.country}
         </div>
       </div>
       
       <div className="grid grid-cols-2 gap-4 text-sm">
         <div>
           <p className="text-muted-foreground">City</p>
-          <p className="font-medium">{device.geo.city}</p>
+          <p className="font-medium">{device.geolocation.city}</p>
         </div>
         <div>
           <p className="text-muted-foreground">Country</p>
-          <p className="font-medium">{device.geo.country}</p>
+          <p className="font-medium">{device.geolocation.country}</p>
         </div>
         <div>
           <p className="text-muted-foreground">Latitude</p>
-          <p className="font-mono text-sm">{device.geo.lat.toFixed(4)}</p>
+          <p className="font-mono text-sm">{device.geolocation.latitude.toFixed(4)}</p>
         </div>
         <div>
           <p className="text-muted-foreground">Longitude</p>
-          <p className="font-mono text-sm">{device.geo.lon.toFixed(4)}</p>
+          <p className="font-mono text-sm">{device.geolocation.longitude.toFixed(4)}</p>
         </div>
       </div>
     </div>
