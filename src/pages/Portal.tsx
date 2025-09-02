@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { mockDevices } from "@/lib/mockData";
+import UserProfile from "@/components/UserProfile";
 
 const Portal = () => {
   const navigate = useNavigate();
@@ -47,9 +48,7 @@ const Portal = () => {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Device Management Portal</h1>
             <p className="text-muted-foreground">Monitor and manage Ubuntu remote agents</p>
           </div>
-          <Button onClick={() => navigate('/')}>
-            Back to Home
-          </Button>
+          <UserProfile />
         </div>
 
         {/* Stats Overview */}

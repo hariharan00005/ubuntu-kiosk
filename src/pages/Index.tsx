@@ -23,7 +23,7 @@ const Index = () => {
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           <Card 
             className="p-6 cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
-            onClick={() => navigate('/portal')}
+            onClick={() => navigate('/login')}
           >
             <Globe className="w-12 h-12 text-primary mx-auto mb-4" />
             <h3 className="text-xl font-semibold mb-2">Management Portal</h3>
