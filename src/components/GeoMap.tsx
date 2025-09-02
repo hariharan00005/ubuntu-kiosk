@@ -1,6 +1,5 @@
-
-import { MapPin } from 'lucide-react';
-import { Device } from '@/lib/mockData';
+import { Device } from "@/lib/mockData";
+import { MapPin } from "lucide-react";
 
 interface GeoMapProps {
   device: Device;
@@ -18,8 +17,7 @@ const GeoMap = ({ device }: GeoMapProps) => {
     );
   }
 
-  // For MVP, we'll show a static map representation
-  // In production, this would use a real map library like Leaflet or Mapbox
+  // Simple placeholder map
   return (
     <div className="space-y-4">
       <div className="h-48 bg-gradient-to-br from-blue-100 to-green-100 rounded-lg relative overflow-hidden">
@@ -33,7 +31,7 @@ const GeoMap = ({ device }: GeoMapProps) => {
           📍 {device.geolocation.city}, {device.geolocation.country}
         </div>
       </div>
-      
+
       <div className="grid grid-cols-2 gap-4 text-sm">
         <div>
           <p className="text-muted-foreground">City</p>

@@ -21,7 +21,7 @@ const Register = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (password !== confirmPassword) {
       toast({
         title: "Password mismatch",
@@ -39,9 +39,9 @@ const Register = () => {
       });
       return;
     }
-    
+
     const success = await register(email, password, fullName);
-    
+
     if (success) {
       toast({
         title: "Registration successful",
@@ -98,7 +98,7 @@ const Register = () => {
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">

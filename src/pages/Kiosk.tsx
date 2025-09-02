@@ -23,9 +23,9 @@ const Kiosk = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       // Simulate occasional connectivity changes
-      if (Math.random() > 0.9) {
-        setIsOnline(prev => !prev);
-      }
+      // if (Math.random() > 0.9) {
+      //   setIsOnline(prev => !prev);
+      // }
     }, 5000);
 
     return () => clearInterval(interval);
@@ -47,7 +47,7 @@ const Kiosk = () => {
   const handleConfigAuth = () => {
     if (configCredentials.username === 'nublify' && configCredentials.password === 'nublify') {
       setAuthError('');
-      alert('Configuration access granted! Portal endpoint configuration would open here.');
+      // alert('Configuration access granted! Portal endpoint configuration would open here.');
       setShowConfig(false);
       setConfigCredentials({ username: '', password: '' });
     } else {
@@ -57,7 +57,7 @@ const Kiosk = () => {
 
   const handleLandingPageRedirect = () => {
     // Simulate redirect to configured landing page
-    alert('Redirecting to configured landing page...');
+    // alert('Redirecting to configured landing page...');
   };
 
   if (isOnline && connectionStep === 'status') {
@@ -221,7 +221,7 @@ const Kiosk = () => {
               <div className="flex gap-3">
                 <Button 
                   onClick={() => {
-                    alert(`Attempting to connect to ${wifiSSID}...`);
+                    // alert(`Attempting to connect to ${wifiSSID}...`);
                     setIsOnline(true);
                     setConnectionStep('status');
                   }}
@@ -279,7 +279,7 @@ const Kiosk = () => {
               <div className="flex gap-3">
                 <Button 
                   onClick={() => {
-                    alert('Configuring ethernet connection...');
+                    // alert('Configuring ethernet connection...');
                     setIsOnline(true);
                     setConnectionStep('status');
                   }}

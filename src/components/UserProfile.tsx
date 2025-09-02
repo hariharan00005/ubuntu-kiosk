@@ -50,12 +50,12 @@ const UserProfile = () => {
             </div>
           </div>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setShowProfileDialog(true)}>
+          <DropdownMenuItem onClick={() => setShowProfileDialog(true)} className="cursor-pointer">
             <User className="mr-2 h-4 w-4" />
             Profile
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={logout} className="text-red-600">
+          <DropdownMenuItem onClick={logout} className="text-red-600 cursor-pointer">
             <LogOut className="mr-2 h-4 w-4" />
             Logout
           </DropdownMenuItem>

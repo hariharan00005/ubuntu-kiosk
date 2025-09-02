@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface User {
   userIdentifier: string;
@@ -35,14 +35,15 @@ const DEMO_CREDENTIALS = {
     userIdentifier: '1',
     emailAddress: 'admin@ubuntu.com',
     fullName: 'Ubuntu Administrator',
-    role: 'Administrator'
-  }
+    role: 'Administrator',
+  },
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     // Check for existing tokens on mount
@@ -61,23 +62,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []);
 
+  // If already authenticated and user lands on "/", "/login", or "/register", redirect to "/portal"
+  useEffect(() => {
+    if (isLoading) return;
+    const publicPaths = ['/', '/login', '/register'];
+    if (user && publicPaths.includes(location.pathname)) {
+      navigate('/portal', { replace: true });
+    }
+  }, [isLoading, user, location.pathname, navigate]);
+
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
-    
+
     try {
       // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       // Demo authentication
       if (email === DEMO_CREDENTIALS.email && password === DEMO_CREDENTIALS.password) {
         // Simulate JWT tokens (in real app, these would come from backend)
         const accessToken = 'demo_access_token_' + Date.now();
         const refreshToken = 'demo_refresh_token_' + Date.now();
-        
+
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
         localStorage.setItem('userData', JSON.stringify(DEMO_CREDENTIALS.user));
-        
+
         setUser(DEMO_CREDENTIALS.user);
         setIsLoading(false);
         return true;
@@ -94,26 +104,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = async (email: string, password: string, fullName: string): Promise<boolean> => {
     setIsLoading(true);
-    
+
     try {
       // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       // Demo registration (in real app, this would call backend API)
-      const newUser = {
+      const newUser: User = {
         userIdentifier: Date.now().toString(),
         emailAddress: email,
-        fullName: fullName,
-        role: 'User'
+        fullName,
+        role: 'User',
       };
-      
+
       const accessToken = 'demo_access_token_' + Date.now();
       const refreshToken = 'demo_refresh_token_' + Date.now();
-      
+
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('userData', JSON.stringify(newUser));
-      
+
       setUser(newUser);
       setIsLoading(false);
       return true;
@@ -140,14 +150,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // In real app, call refresh endpoint
       // const response = await fetch('/api/auth/refresh', { ... });
-      
+
       // Demo refresh
       const newAccessToken = 'demo_access_token_refreshed_' + Date.now();
       const newRefreshToken = 'demo_refresh_token_refreshed_' + Date.now();
-      
+
       localStorage.setItem('accessToken', newAccessToken);
       localStorage.setItem('refreshToken', newRefreshToken);
-      
+
       return true;
     } catch (error) {
       console.error('Token refresh error:', error);
@@ -162,7 +172,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login,
     logout,
     register,
-    isLoading
+    isLoading,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

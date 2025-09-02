@@ -1,4 +1,3 @@
-
 import { Monitor, Globe, Wifi } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -15,13 +14,10 @@ const Index = () => {
           <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
             Ubuntu Remote Agent
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Remote device monitoring and management portal for Ubuntu Desktop endpoints
-          </p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-6 mb-8">
-          <Card 
+          <Card
             className="p-6 cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
             onClick={() => navigate('/login')}
           >
@@ -35,7 +31,7 @@ const Index = () => {
             </Button>
           </Card>
 
-          <Card 
+          <Card
             className="p-6 cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
             onClick={() => navigate('/kiosk')}
           >
