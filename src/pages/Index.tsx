@@ -11,29 +11,15 @@ const Index = () => {
       <div className="text-center max-w-4xl mx-auto animate-slide-up">
         <div className="mb-8">
           <Monitor className="w-20 h-20 mx-auto mb-6 text-primary" />
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+          <h1 className="text-5xl leading-normal font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
             Ubuntu Remote Agent
           </h1>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
+        <div className="grid mb-8">
           <Card
             className="p-6 cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
-            onClick={() => navigate('/login')}
-          >
-            <Globe className="w-12 h-12 text-primary mx-auto mb-4" />
-            <h3 className="text-xl font-semibold mb-2">Management Portal</h3>
-            <p className="text-muted-foreground mb-4">
-              Monitor and manage all connected Ubuntu devices with real-time metrics
-            </p>
-            <Button variant="outline" className="w-full">
-              Open Portal
-            </Button>
-          </Card>
-
-          <Card
-            className="p-6 cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
-            onClick={() => navigate('/kiosk')}
+            onClick={() => navigate("/kiosk")}
           >
             <Wifi className="w-12 h-12 text-primary mx-auto mb-4" />
             <h3 className="text-xl font-semibold mb-2">Kiosk Mode</h3>
