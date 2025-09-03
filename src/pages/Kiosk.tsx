@@ -217,8 +217,9 @@ const Kiosk = () => {
   if (isOnline && connectionStep === "status") {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-600 to-purple-700 flex items-center justify-center p-4 bg-white">
-        <div className="kiosk-overlay rounded-2xl p-8 max-w-md w-full text-center">
-          <div className="animate-pulse-glow mb-6">
+        <div className="kiosk-overlay rounded-2xl p-8 max-w-md w-full text-center
+                bg-white shadow-2xl ring-1 ring-gray-200">
+          <div className="animate-pulse-glow mb-6 rounded-[12px]">
             <CheckCircle className="w-20 h-20 mx-auto text-green-400" />
           </div>
           <h1 className="text-2xl font-bold text-black mb-4">
