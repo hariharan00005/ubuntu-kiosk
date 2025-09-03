@@ -93,6 +93,7 @@ export type NetworkInterface = {
   defaultGateway?: string | null;
   macAddress?: string;
   mtu?: number;
+  speedMbps?: number | null;
   [k: string]: any;
 };
 
@@ -101,7 +102,8 @@ export type NetworkInterfacesResponse = {
 };
 
 export type WifiStatus = {
-  enabled: boolean;
+  enabled: boolean;                 // normalized from enabled | wifi_enabled
+  wifi_enabled?: boolean;
   connected?: boolean;
   ssid?: string | null;
   [k: string]: any;
@@ -178,7 +180,6 @@ export async function getDebugConfig(): Promise<any> {
 export async function getNetworkStatus(): Promise<OnlineStatus> {
   try {
     const { data } = await networkApi.get("/network/status");
-    // expect at least { online: boolean }
     if (typeof data?.online === "boolean") return data as OnlineStatus;
   } catch {}
   // Fallback via /metrics.networkInformation.online
@@ -200,17 +201,27 @@ export async function getNetworkInterfaces(): Promise<NetworkInterface[]> {
   return [];
 }
 
-// 9) Get WiFi Status
+// 9) Get WiFi Status (normalize shape)
 export async function getWifiStatus(): Promise<WifiStatus> {
   const { data } = await networkApi.get("/network/wifi_status");
-  return (data ?? { enabled: false }) as WifiStatus;
+  const enabled = !!(data?.enabled ?? data?.wifi_enabled);
+  const connected = !!data?.connected;
+  const ssid = (data?.ssid ?? null) || null;
+  return { ...data, enabled, connected, ssid } as WifiStatus;
 }
 
-// 10) Scan for WiFi Networks
+// 10) Scan for WiFi Networks (normalize signal to number)
 export async function wifiScan(): Promise<WifiNetwork[]> {
   try {
     const { data } = await networkApi.get("/network/wifi_scan");
-    return pickWifiList(data);
+    const list = pickWifiList(data).map((n) => ({
+      ...n,
+      signal:
+        typeof n.signal === "number"
+          ? n.signal
+          : Number.parseInt(String(n.signal), 10) || undefined,
+    }));
+    return list;
   } catch {
     return [];
   }

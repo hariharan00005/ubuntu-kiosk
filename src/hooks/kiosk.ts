@@ -47,7 +47,7 @@ export function useOnlineQuery() {
   return useQuery<OnlineStatus>({
     queryKey: qk.netOnline,
     queryFn: getNetworkStatus,
-    refetchInterval: 5000,
+    refetchInterval: 10000,
     placeholderData: (prev) => prev,
   });
 }
@@ -58,7 +58,7 @@ export function useWifiScanQuery(enabled = true) {
     queryKey: qk.wifiList,
     queryFn: wifiScan,
     enabled,
-    refetchInterval: enabled ? 8000 : false,
+    refetchInterval: enabled ? 10000 : false,
     placeholderData: (prev) => prev,
   });
 }
@@ -68,7 +68,7 @@ export function useWifiStatusQuery() {
   return useQuery<WifiStatus>({
     queryKey: ['wifiStatus'],
     queryFn: getWifiStatus,
-    refetchInterval: 8000,
+    refetchInterval: 10000,
     placeholderData: (prev) => prev,
   });
 }
@@ -98,7 +98,7 @@ export function useCurrentMetricsQuery() {
   return useQuery<CurrentMetrics | null>({
     queryKey: ['metrics.current'],
     queryFn: getCurrentMetrics,
-    refetchInterval: 8000,
+    refetchInterval: 10000,
     placeholderData: (prev) => prev,
   });
 }

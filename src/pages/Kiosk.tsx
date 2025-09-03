@@ -4,17 +4,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Wifi,
   Globe,
-  Settings,
   AlertTriangle,
   CheckCircle,
-  Monitor,
   RefreshCw,
   Power,
   Link2Off,
-  Eraser,
   HardDrive,
   Activity,
   MapPin,
+  Eye,
+  EyeOff,
+  ArrowLeft,
+  Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,27 +60,67 @@ const Kiosk = () => {
 
   const [connectionStep, setConnectionStep] = useState<Step>("status");
 
-  // Wi-Fi form
-  const [wifiSSID, setWifiSSID] = useState("");
-  const [wifiPassword, setWifiPassword] = useState("");
+  /** ===== Wi-Fi (inline prompt) ===== */
+  const [promptSsid, setPromptSsid] = useState<string | null>(null);
+  const [promptPassword, setPromptPassword] = useState("");
+  const [showPromptPassword, setShowPromptPassword] = useState(false);
   const passwordRef = useRef<HTMLInputElement | null>(null);
-  const [forgetSsid, setForgetSsid] = useState("");
+  const [lastConnectedSsid, setLastConnectedSsid] = useState<string | null>(
+    null
+  );
 
-  // Ethernet form
-  const [iface, setIface] = useState("enp4s0");
-  const [ipCidr, setIpCidr] = useState("192.168.3.50/24");
-  const [gateway, setGateway] = useState("192.168.3.1");
-  const [dns, setDns] = useState("1.1.1.1,8.8.8.8");
+  /** ===== Ethernet form state (empty to avoid autofill) ===== */
+  const [iface, setIface] = useState("");
+  const [ipCidr, setIpCidr] = useState("");
+  const [gateway, setGateway] = useState("");
+  const [dns, setDns] = useState("");
+  const [selectedEth, setSelectedEth] = useState<string>("");
 
   // Hooks
   const onlineQuery = useOnlineQuery();
   useOnlineAutoRefetch();
-  const isOnline = false; //onlineQuery.data?.online ?? false;
+  const isOnline = false; // onlineQuery.data?.online ?? false;
 
   const wifiQuery = useWifiScanQuery(connectionStep === "wifi");
   const wifiList = useMemo(() => wifiQuery.data ?? [], [wifiQuery.data]);
 
   const wifiStatus = useWifiStatusQuery();
+
+  /** ---------- SSID parsing & derived connection state ---------- */
+  const extractSsid = (raw?: string | null) => {
+    if (!raw) return null;
+    // backend sends like "GENERAL.CONNECTION:SSID" or "GENERAL.CONNECTION:"
+    const idx = raw.indexOf(":");
+    const ssid = idx >= 0 ? raw.slice(idx + 1) : raw;
+    const s = ssid.trim();
+    return s.length ? s : null;
+  };
+  const parsedSsid = extractSsid((wifiStatus.data as any)?.ssid);
+  // If API provides a definitive parsed value (including empty), use it.
+  // Only fall back to lastConnectedSsid while fetching/undefined.
+  const connectedSsid: string | null = useMemo(() => {
+    if (parsedSsid !== null) return parsedSsid;
+    if (wifiStatus.isFetching || typeof wifiStatus.data === "undefined") {
+      return lastConnectedSsid;
+    }
+    return null;
+  }, [parsedSsid, wifiStatus.isFetching, wifiStatus.data, lastConnectedSsid]);
+
+  const wifiEnabled = Boolean(
+    (wifiStatus.data as any)?.enabled ??
+      (wifiStatus.data as any)?.wifi_enabled ??
+      false
+  );
+  const wifiConnected = Boolean(connectedSsid);
+
+  useEffect(() => {
+    // keep a best-effort cache only when we truly have an SSID
+    if (parsedSsid) setLastConnectedSsid(parsedSsid);
+    if (parsedSsid === null && !wifiStatus.isFetching) {
+      setLastConnectedSsid(null);
+    }
+  }, [parsedSsid, wifiStatus.isFetching]);
+
   const netIfaces = useNetworkInterfacesQuery();
   const currentMetrics = useCurrentMetricsQuery();
   const sysInfo = useSystemInformationQuery();
@@ -92,7 +133,7 @@ const Kiosk = () => {
   const disconnectWifi = useWifiDisconnect();
   const forgetWifi = useWifiForget();
 
-  // Hotkey for hidden config
+  // Hidden config hotkey
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.altKey && e.key.toLowerCase() === "e") {
@@ -119,6 +160,7 @@ const Kiosk = () => {
 
   const handleLandingPageRedirect = () => navigate("/");
 
+  /** ===== Helpers ===== */
   const signalPercent = (n: any): number => {
     if (typeof n === "number") {
       if (n < 0) {
@@ -127,13 +169,54 @@ const Kiosk = () => {
       }
       return Math.max(0, Math.min(100, n));
     }
-    return 0;
+    const num = Number.parseInt(String(n), 10);
+    return Number.isFinite(num) ? Math.max(0, Math.min(100, num)) : 0;
+  };
+  const signalGradient = (pct: number) => {
+    if (pct >= 80) return "from-green-500 to-green-600";
+    if (pct >= 60) return "from-lime-500 to-lime-600";
+    if (pct >= 35) return "from-amber-500 to-amber-600";
+    return "from-red-500 to-orange-600";
+  };
+  const signalText = (pct: number) => {
+    if (pct >= 80) return "text-green-700";
+    if (pct >= 60) return "text-lime-700";
+    if (pct >= 35) return "text-amber-700";
+    return "text-red-700";
+  };
+  const isConnectedTo = (ssid?: string) => {
+    const t = (ssid || "").trim();
+    return !!t && connectedSsid === t;
   };
 
-  // ---- ONLINE SUCCESS SCREEN ----
+  /** ===== Ethernet visuals ===== */
+  const speedToPct = (spd?: number | null) => {
+    if (!spd || spd <= 0) return 0;
+    if (spd >= 10000) return 100;
+    if (spd >= 2500) return 88;
+    if (spd >= 1000) return 75;
+    if (spd >= 100) return 40;
+    return 10;
+  };
+  const speedGradient = (spd?: number | null) => {
+    if (!spd || spd <= 10) return "from-red-500 to-orange-600";
+    if (spd <= 100) return "from-amber-500 to-amber-600";
+    if (spd <= 1000) return "from-lime-500 to-lime-600";
+    if (spd <= 2500) return "from-green-500 to-green-600";
+    return "from-sky-500 to-indigo-600";
+  };
+  const speedBadge = (spd?: number | null) => {
+    if (!spd || spd <= 10) return "bg-red-100 text-red-700";
+    if (spd <= 100) return "bg-amber-100 text-amber-700";
+    if (spd <= 1000) return "bg-lime-100 text-lime-700";
+    if (spd <= 2500) return "bg-green-100 text-green-700";
+    return "bg-sky-100 text-sky-700";
+  };
+
+  /** ===== ONLINE SUCCESS SCREEN ===== */
   if (isOnline && connectionStep === "status") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-600 to-purple-700 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-600 to-purple-700 flex items-center justify-center p-4 bg-white">
         <div className="kiosk-overlay rounded-2xl p-8 max-w-md w-full text-center">
           <div className="animate-pulse-glow mb-6">
             <CheckCircle className="w-20 h-20 mx-auto text-green-400" />
@@ -192,6 +275,9 @@ const Kiosk = () => {
                       username: e.target.value,
                     }))
                   }
+                  autoComplete="off"
+                  data-1p-ignore
+                  data-lpignore="true"
                 />
               </div>
               <div>
@@ -206,6 +292,9 @@ const Kiosk = () => {
                       password: e.target.value,
                     }))
                   }
+                  autoComplete="new-password"
+                  data-1p-ignore
+                  data-lpignore="true"
                 />
               </div>
               {authError && <p className="text-sm text-red-500">{authError}</p>}
@@ -219,23 +308,15 @@ const Kiosk = () => {
     );
   }
 
-  // ---- MAIN ASSISTANT UI ----
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center p-4">
-      <div className="max-w-4xl w-full">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Monitor className="w-12 h-12 text-black" />
-            <h1 className="text-3xl font-bold text-black">
-              Connection Assistant
-            </h1>
-          </div>
-          <p className="text-black/70">
-            Help configure your network connection
-          </p>
-        </div>
+  // Lock page scroll on Wi-Fi/Ethernet; scroll inside the card only
+  const containerClasses =
+    connectionStep === "wifi" || connectionStep === "ethernet"
+      ? "h-screen overflow-hidden bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center p-4"
+      : "min-h-screen bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center p-4";
 
+  return (
+    <div className={containerClasses}>
+      <div className="max-w-4xl w-full">
         {connectionStep === "status" && (
           <Card className="glass-card">
             <CardHeader>
@@ -245,7 +326,7 @@ const Kiosk = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Online/Offline banner */}
+              {/* Banner */}
               <div
                 className={`flex items-center justify-between p-4 rounded-lg border ${
                   isOnline
@@ -285,7 +366,7 @@ const Kiosk = () => {
                 </Badge>
               </div>
 
-              {/* Quick metrics strip */}
+              {/* Quick metrics */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="flex items-center gap-3 p-3 rounded-md bg-white/5 border border-white/10">
                   <Activity className="w-5 h-5 text-black/80" />
@@ -406,24 +487,37 @@ const Kiosk = () => {
           </Card>
         )}
 
+        {/* =================== WI-FI =================== */}
         {connectionStep === "wifi" && (
           <Card className="glass-card mt-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+            <CardHeader className="grid grid-cols-10 items-center">
+              <CardTitle className="col-span-9 flex items-center gap-2">
                 <Wifi className="w-5 h-5" />
                 Wi-Fi Configuration
               </CardTitle>
+              <div className="col-span-1 flex justify-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setConnectionStep("status")}
+                  className="flex items-center gap-1"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Back
+                </Button>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Wi-Fi status row */}
+
+            <CardContent className="space-y-6 max-h-[70vh] overflow-y-auto">
+              {/* Status */}
               <div className="flex items-center justify-between rounded-md border p-3">
                 <div className="text-sm">
                   <div className="font-medium">Wi-Fi Status</div>
                   <div className="text-muted-foreground">
-                    {wifiStatus.data?.enabled ? "Enabled" : "Disabled"}
-                    {wifiStatus.data?.connected && wifiStatus.data?.ssid
-                      ? ` • Connected to ${wifiStatus.data?.ssid}`
-                      : ""}
+                    {wifiEnabled ? "Enabled" : "Disabled"}
+                    {wifiEnabled && connectedSsid && (
+                      <> • Connected to {connectedSsid}</>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -449,6 +543,7 @@ const Kiosk = () => {
                     size="sm"
                     variant="outline"
                     onClick={() => wifiQuery.refetch()}
+                    disabled={!wifiEnabled}
                     className="gap-2"
                   >
                     <RefreshCw
@@ -461,8 +556,13 @@ const Kiosk = () => {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => disconnectWifi.mutate()}
-                    disabled={disconnectWifi.isPending}
+                    onClick={async () => {
+                      setLastConnectedSsid(null); // optimistic clear
+                      await disconnectWifi.mutateAsync();
+                      wifiStatus.refetch();
+                      wifiQuery.refetch();
+                    }}
+                    disabled={!wifiEnabled || disconnectWifi.isPending}
                     className="gap-2"
                   >
                     <Link2Off className="w-4 h-4" />
@@ -471,275 +571,515 @@ const Kiosk = () => {
                 </div>
               </div>
 
-              {/* Scan status */}
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-muted-foreground">
-                  {wifiQuery.isLoading
-                    ? "Scanning for networks..."
-                    : `Found ${wifiList.length} networks`}
-                </div>
-              </div>
-
-              {/* Networks List */}
-              <div className="max-h-64 overflow-auto rounded-md border">
-                <div className="divide-y">
-                  {wifiList.length === 0 && (
-                    <div className="p-4 text-sm text-muted-foreground">
-                      No networks found. Try scanning again.
+              {/* Scan + List only if Wi-Fi is enabled */}
+              {wifiEnabled ? (
+                <>
+                  {/* Scan status */}
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">
+                      {wifiQuery.isLoading
+                        ? "Scanning for networks..."
+                        : `Found ${wifiList.length} networks`}
                     </div>
-                  )}
-                  {wifiList.map((w) => {
-                    const pct =
-                      typeof w.signal === "number"
-                        ? w.signal
-                        : typeof w.rssi === "number"
-                        ? signalPercent(w.rssi)
-                        : 0;
-                    return (
-                      <div
-                        key={`${w.bssid ?? w.ssid}-${w.channel ?? ""}`}
-                        className="p-3 flex items-center justify-between gap-3"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-14">
-                            <div className="h-2 rounded bg-slate-200">
-                              <div
-                                className="h-2 rounded bg-slate-600"
-                                style={{ width: `${pct}%` }}
-                              />
-                            </div>
-                            <div className="text-[10px] text-muted-foreground text-center mt-1">
-                              {pct}%
-                            </div>
-                          </div>
-                          <div className="min-w-0">
-                            <div className="font-medium truncate max-w-[220px]">
-                              {w.ssid || "(hidden SSID)"}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {w.security || "Open"}{" "}
-                              {w.channel ? `• Ch ${w.channel}` : ""}{" "}
-                              {w.frequency ? `• ${w.frequency}MHz` : ""}{" "}
-                              {w.connected ? " • Connected" : ""}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => {
-                              setWifiSSID(w.ssid || "");
-                              setTimeout(
-                                () => passwordRef.current?.focus(),
-                                10
-                              );
-                            }}
-                          >
-                            Use
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Connect Form */}
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="ssid">Network Name (SSID)</Label>
-                  <Input
-                    id="ssid"
-                    placeholder="Enter Wi-Fi network name"
-                    value={wifiSSID}
-                    onChange={(e) => setWifiSSID(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="wifi-password">Password</Label>
-                  <Input
-                    id="wifi-password"
-                    type="password"
-                    ref={passwordRef}
-                    placeholder="Enter Wi-Fi password"
-                    value={wifiPassword}
-                    onChange={(e) => setWifiPassword(e.target.value)}
-                  />
-                </div>
-                <div className="flex gap-3">
-                  <Button
-                    onClick={() =>
-                      connectWifi.mutate({
-                        ssid: wifiSSID,
-                        password: wifiPassword,
-                      })
-                    }
-                    disabled={
-                      !wifiSSID || !wifiPassword || connectWifi.isPending
-                    }
-                    className="flex-1"
-                  >
-                    {connectWifi.isPending ? "Connecting..." : "Connect"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setConnectionStep("status")}
-                  >
-                    Back
-                  </Button>
-                </div>
-              </div>
-
-              {/* Forget Form */}
-              <div className="pt-4 border-t space-y-3">
-                <div className="flex items-end gap-3">
-                  <div className="flex-1">
-                    <Label htmlFor="forget-ssid">Forget Network (SSID)</Label>
-                    <Input
-                      id="forget-ssid"
-                      placeholder="SSID to forget"
-                      value={forgetSsid}
-                      onChange={(e) => setForgetSsid(e.target.value)}
-                    />
                   </div>
-                  <Button
-                    variant="destructive"
-                    disabled={!forgetSsid || forgetWifi.isPending}
-                    onClick={() => forgetWifi.mutate(forgetSsid)}
-                    className="gap-2"
-                  >
-                    <Eraser className="w-4 h-4" />
-                    Forget
-                  </Button>
+
+                  {/* List */}
+                  <div className="rounded-md border divide-y">
+                    {wifiList.length === 0 && (
+                      <div className="p-4 text-sm text-muted-foreground">
+                        No networks found. Try scanning again.
+                      </div>
+                    )}
+
+                    {wifiList.map((w) => {
+                      const ssid = w.ssid || "";
+                      const pct =
+                        typeof w.signal === "number"
+                          ? w.signal
+                          : signalPercent(w.signal ?? (w as any).rssi);
+                      const connectedRow = isConnectedTo(ssid);
+                      const prompting = promptSsid === ssid;
+
+                      return (
+                        <div
+                          key={`${ssid}-${(w as any).channel ?? ""}`}
+                          className="p-3"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-16">
+                                <div className="h-2 rounded bg-slate-200">
+                                  <div
+                                    className={`h-2 rounded bg-gradient-to-r ${signalGradient(
+                                      pct
+                                    )}`}
+                                    style={{ width: `${pct}%` }}
+                                  />
+                                </div>
+                                <div
+                                  className={`text-[10px] text-center mt-1 ${signalText(
+                                    pct
+                                  )}`}
+                                >
+                                  {pct}%
+                                </div>
+                              </div>
+
+                              <div className="min-w-0">
+                                <div className="font-medium truncate max-w-[220px]">
+                                  {ssid || "(hidden SSID)"}{" "}
+                                  {connectedRow && (
+                                    <Badge className="ml-2" variant="secondary">
+                                      Connected
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {w.security || "Open"}{" "}
+                                  {(w as any).channel
+                                    ? `• Ch ${(w as any).channel}`
+                                    : ""}{" "}
+                                  {(w as any).frequency
+                                    ? `• ${(w as any).frequency}MHz`
+                                    : ""}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              {!connectedRow && (
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  disabled={!wifiEnabled}
+                                  onClick={() => {
+                                    setPromptSsid(ssid);
+                                    setPromptPassword("");
+                                    setShowPromptPassword(false);
+                                    setTimeout(
+                                      () => passwordRef.current?.focus(),
+                                      10
+                                    );
+                                  }}
+                                >
+                                  Connect
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={async () => {
+                                  if (!ssid) return;
+                                  const ok = window.confirm(
+                                    `Forget "${ssid}"?`
+                                  );
+                                  if (!ok) return;
+                                  await forgetWifi.mutateAsync(ssid);
+                                  if (connectedSsid === ssid) {
+                                    setLastConnectedSsid(null);
+                                  }
+                                  setPromptSsid(null);
+                                  setPromptPassword("");
+                                  wifiQuery.refetch();
+                                  wifiStatus.refetch();
+                                }}
+                              >
+                                Forget
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Inline password prompt */}
+                          {prompting && !connectedRow && (
+                            <div className="mt-3 rounded-md border p-3 bg-muted/30">
+                              <Label htmlFor={`pw-${ssid}`}>Password</Label>
+                              <div className="relative mt-1">
+                                <Input
+                                  id={`pw-${ssid}`}
+                                  ref={passwordRef}
+                                  type={
+                                    showPromptPassword ? "text" : "password"
+                                  }
+                                  placeholder="Enter Wi-Fi password"
+                                  value={promptPassword}
+                                  onChange={(e) =>
+                                    setPromptPassword(e.target.value)
+                                  }
+                                  autoComplete="new-password"
+                                  autoCorrect="off"
+                                  autoCapitalize="none"
+                                  className="pr-10"
+                                  data-1p-ignore
+                                  data-lpignore="true"
+                                  data-form-type="other"
+                                />
+                                <button
+                                  type="button"
+                                  aria-label={
+                                    showPromptPassword
+                                      ? "Hide password"
+                                      : "Show password"
+                                  }
+                                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-muted"
+                                  onClick={() =>
+                                    setShowPromptPassword((s) => !s)
+                                  }
+                                >
+                                  {showPromptPassword ? (
+                                    <EyeOff className="w-4 h-4" />
+                                  ) : (
+                                    <Eye className="w-4 h-4" />
+                                  )}
+                                </button>
+                              </div>
+
+                              <div className="mt-3 flex gap-2">
+                                <Button
+                                  onClick={async (e) => {
+                                    e.preventDefault();
+                                    const res: any =
+                                      await connectWifi.mutateAsync({
+                                        ssid,
+                                        password: promptPassword,
+                                      });
+                                    if (res?.ok) {
+                                      setLastConnectedSsid(ssid);
+                                      setPromptPassword("");
+                                      setPromptSsid(null);
+                                      wifiStatus.refetch();
+                                      wifiQuery.refetch();
+                                    }
+                                  }}
+                                  disabled={
+                                    !promptPassword || connectWifi.isPending
+                                  }
+                                >
+                                  {connectWifi.isPending
+                                    ? "Connecting..."
+                                    : "Connect"}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setPromptPassword("");
+                                    setPromptSsid(null);
+                                  }}
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <div className="p-6 text-center text-sm text-muted-foreground border rounded-md bg-muted/30">
+                  <Wifi className="mx-auto mb-2 w-6 h-6 opacity-70" />
+                  Wi-Fi is currently{" "}
+                  <span className="font-medium">disabled</span>. Enable it to
+                  scan and connect to available networks.
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         )}
 
+        {/* =================== ETHERNET (attractive UI) =================== */}
         {connectionStep === "ethernet" && (
           <Card className="glass-card mt-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+            <CardHeader className="grid grid-cols-10 items-center">
+              <CardTitle className="col-span-9 flex items-center gap-2">
                 <Globe className="w-5 h-5" />
                 Ethernet Configuration
               </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <h4 className="font-medium text-blue-800 mb-2">
-                  Automatic (DHCP) vs Static
-                </h4>
-                <p className="text-sm text-blue-600">
-                  Leave fields empty to keep DHCP. Fill below to apply a static
-                  configuration.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="iface">Interface</Label>
-                  <Input
-                    id="iface"
-                    placeholder="enp4s0"
-                    value={iface}
-                    onChange={(e) => setIface(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="ip">IP/CIDR</Label>
-                  <Input
-                    id="ip"
-                    placeholder="192.168.3.50/24"
-                    value={ipCidr}
-                    onChange={(e) => setIpCidr(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="gateway">Gateway</Label>
-                  <Input
-                    id="gateway"
-                    placeholder="192.168.3.1"
-                    value={gateway}
-                    onChange={(e) => setGateway(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="dns">DNS (comma-separated)</Label>
-                  <Input
-                    id="dns"
-                    placeholder="1.1.1.1,8.8.8.8"
-                    value={dns}
-                    onChange={(e) => setDns(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3">
+              <div className="col-span-1 flex justify-end">
                 <Button
-                  className="flex-1"
-                  disabled={applyStaticIp.isPending}
-                  onClick={() =>
-                    applyStaticIp.mutate({
-                      device: iface.trim(),
-                      ipCidr: ipCidr.trim(),
-                      gateway: gateway.trim(),
-                      dns: dns
-                        .split(",")
-                        .map((s) => s.trim())
-                        .filter(Boolean),
-                    })
-                  }
-                >
-                  {applyStaticIp.isPending ? "Applying..." : "Apply Static IP"}
-                </Button>
-                <Button
-                  variant="outline"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setConnectionStep("status")}
+                  className="flex items-center gap-1"
                 >
+                  <ArrowLeft className="w-4 h-4" />
                   Back
                 </Button>
               </div>
+            </CardHeader>
 
-              <div className="pt-2 border-t">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="iface2">Interface</Label>
-                    <Input
-                      id="iface2"
-                      placeholder="enp4s0"
-                      value={iface}
-                      onChange={(e) => setIface(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="dns2">DNS Servers (comma-separated)</Label>
-                    <Input
-                      id="dns2"
-                      placeholder="9.9.9.9,1.1.1.1"
-                      value={dns}
-                      onChange={(e) => setDns(e.target.value)}
-                    />
-                  </div>
+            <CardContent className="space-y-6 max-h-[70vh] overflow-y-auto">
+              {/* Status */}
+              <div className="flex items-center justify-between rounded-md border p-3">
+                {(() => {
+                  const ethList =
+                    netIfaces.data?.filter(
+                      (i) => i.interfaceType === "ethernet"
+                    ) ?? [];
+                  const primary =
+                    ethList.find((i) => i.operationalState === "up") ||
+                    ethList[0];
+                  const spd = primary?.["speedMbps" as any] as
+                    | number
+                    | undefined;
+                  const pct = speedToPct(spd);
+                  return (
+                    <>
+                      <div className="text-sm">
+                        <div className="font-medium">Ethernet Status</div>
+                        {primary ? (
+                          <div className="text-muted-foreground">
+                            {primary.interfaceName} •{" "}
+                            {primary.operationalState === "up" ? (
+                              <span className="text-green-700">Link Up</span>
+                            ) : (
+                              <span className="text-red-700">Link Down</span>
+                            )}
+                            {" • "}
+                            <span className="font-mono">
+                              {primary.internetProtocolAddressV4 || "-"}
+                            </span>
+                            {"  gw "}
+                            <span className="font-mono">
+                              {primary.defaultGateway || "-"}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="text-muted-foreground">
+                            No ethernet interfaces detected
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="min-w-[160px]">
+                        <div className="h-2 rounded bg-slate-200">
+                          <div
+                            className={`h-2 rounded bg-gradient-to-r ${speedGradient(
+                              spd
+                            )}`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-[10px] text-slate-600">
+                            Speed
+                          </span>
+                          <span
+                            className={`text-[10px] px-2 py-[2px] rounded ${speedBadge(
+                              spd
+                            )}`}
+                          >
+                            {spd ? `${spd} Mbps` : "—"}
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+
+              {/* Interfaces list */}
+              <div className="rounded-md border divide-y">
+                <div className="px-3 py-2 text-sm text-slate-600 bg-white/40 flex items-center gap-2">
+                  <Settings className="w-4 h-4" />
+                  Select an interface to configure
                 </div>
-                <div className="mt-3">
-                  <Button
-                    variant="secondary"
-                    disabled={applyDns.isPending}
-                    onClick={() =>
-                      applyDns.mutate({
-                        device: iface.trim(),
-                        dns: dns
-                          .split(",")
-                          .map((s) => s.trim())
-                          .filter(Boolean),
-                      })
-                    }
-                  >
-                    {applyDns.isPending ? "Applying..." : "Set DNS Only"}
-                  </Button>
-                </div>
+
+                {(
+                  netIfaces.data?.filter(
+                    (i) => i.interfaceType === "ethernet"
+                  ) ?? []
+                ).map((ni) => {
+                  const spd = ni["speedMbps" as any] as number | undefined;
+                  const pct = speedToPct(spd);
+                  const isSelected = selectedEth === ni.interfaceName;
+
+                  return (
+                    <div key={ni.interfaceName} className="p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">
+                              {ni.interfaceName}
+                            </span>
+                            <Badge variant="outline">{ni.interfaceType}</Badge>
+                            <Badge
+                              className={
+                                ni.operationalState === "up"
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-red-100 text-red-700"
+                              }
+                            >
+                              {ni.operationalState || "unknown"}
+                            </Badge>
+                            {typeof spd === "number" && (
+                              <Badge className={speedBadge(spd)}>
+                                {spd} Mbps
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            ip:{" "}
+                            <span className="font-mono">
+                              {ni.internetProtocolAddressV4 || "—"}
+                            </span>{" "}
+                            • gw:{" "}
+                            <span className="font-mono">
+                              {ni.defaultGateway || "—"}
+                            </span>
+                          </div>
+
+                          {/* mini speed bar */}
+                          <div className="w-48 mt-2">
+                            <div className="h-1.5 rounded bg-slate-200">
+                              <div
+                                className={`h-1.5 rounded bg-gradient-to-r ${speedGradient(
+                                  spd
+                                )}`}
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant={isSelected ? "secondary" : "outline"}
+                            onClick={() => {
+                              setSelectedEth(ni.interfaceName);
+                              setIface(ni.interfaceName);
+                            }}
+                          >
+                            {isSelected ? "Selected" : "Select"}
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Inline config panels for the selected interface */}
+                      {selectedEth === ni.interfaceName && (
+                        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Static IP panel (left) */}
+                          <div className="rounded-md border p-3 bg-muted/20">
+                            <div className="font-medium mb-2">Static IP</div>
+                            <div className="grid gap-3">
+                              <div>
+                                <Label htmlFor={`ip-${ni.interfaceName}`}>
+                                  IP/CIDR
+                                </Label>
+                                <Input
+                                  id={`ip-${ni.interfaceName}`}
+                                  placeholder="e.g. 192.168.3.50/24"
+                                  value={ipCidr}
+                                  onChange={(e) => setIpCidr(e.target.value)}
+                                  autoComplete="off"
+                                  data-1p-ignore
+                                  data-lpignore="true"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor={`gw-${ni.interfaceName}`}>
+                                  Gateway
+                                </Label>
+                                <Input
+                                  id={`gw-${ni.interfaceName}`}
+                                  placeholder="e.g. 192.168.3.1"
+                                  value={gateway}
+                                  onChange={(e) => setGateway(e.target.value)}
+                                  autoComplete="off"
+                                  data-1p-ignore
+                                  data-lpignore="true"
+                                />
+                              </div>
+                              <Button
+                                disabled={
+                                  applyStaticIp.isPending ||
+                                  !iface.trim() ||
+                                  !ipCidr.trim() ||
+                                  !gateway.trim()
+                                }
+                                onClick={() =>
+                                  applyStaticIp.mutate({
+                                    device: iface.trim(),
+                                    ipCidr: ipCidr.trim(),
+                                    gateway: gateway.trim(),
+                                    dns: dns
+                                      .split(",")
+                                      .map((s) => s.trim())
+                                      .filter(Boolean),
+                                  })
+                                }
+                              >
+                                {applyStaticIp.isPending
+                                  ? "Applying..."
+                                  : `Apply Static IP (${
+                                      iface || ni.interfaceName
+                                    })`}
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* DNS panel (right) */}
+                          <div className="rounded-md border p-3 bg-muted/20">
+                            <div className="font-medium mb-2">DNS Only</div>
+                            <div className="grid gap-3">
+                              <div>
+                                <Label htmlFor={`dns-${ni.interfaceName}`}>
+                                  DNS servers (comma-separated)
+                                </Label>
+                                <Input
+                                  id={`dns-${ni.interfaceName}`}
+                                  placeholder="e.g. 1.1.1.1,8.8.8.8"
+                                  value={dns}
+                                  onChange={(e) => setDns(e.target.value)}
+                                  autoComplete="off"
+                                  data-1p-ignore
+                                  data-lpignore="true"
+                                />
+                              </div>
+                              <Button
+                                variant="secondary"
+                                disabled={
+                                  applyDns.isPending ||
+                                  !iface.trim() ||
+                                  !dns
+                                    .split(",")
+                                    .map((s) => s.trim())
+                                    .filter(Boolean).length
+                                }
+                                onClick={() =>
+                                  applyDns.mutate({
+                                    device: iface.trim(),
+                                    dns: dns
+                                      .split(",")
+                                      .map((s) => s.trim())
+                                      .filter(Boolean),
+                                  })
+                                }
+                              >
+                                {applyDns.isPending
+                                  ? "Applying..."
+                                  : `Set DNS Only (${
+                                      iface || ni.interfaceName
+                                    })`}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Info callout */}
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h4 className="font-medium text-blue-800 mb-1">Tip</h4>
+                <p className="text-sm text-blue-700">
+                  To keep DHCP, don’t apply a Static IP. You can still set only
+                  DNS on any selected interface.
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -763,6 +1103,9 @@ const Kiosk = () => {
                       username: e.target.value,
                     }))
                   }
+                  autoComplete="off"
+                  data-1p-ignore
+                  data-lpignore="true"
                 />
               </div>
               <div>
@@ -777,6 +1120,9 @@ const Kiosk = () => {
                       password: e.target.value,
                     }))
                   }
+                  autoComplete="new-password"
+                  data-1p-ignore
+                  data-lpignore="true"
                 />
               </div>
               {authError && <p className="text-sm text-red-500">{authError}</p>}
@@ -791,6 +1137,11 @@ const Kiosk = () => {
           <p className="text-black/50 text-sm">
             Press Ctrl+Alt+E to access configuration
           </p>
+          {sysInfo.data?.hostName && (
+            <p className="text-black/40 text-xs mt-1">
+              {sysInfo.data.hostName} • {sysInfo.data.operatingSystem}
+            </p>
+          )}
         </div>
       </div>
     </div>
