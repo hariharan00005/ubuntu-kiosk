@@ -79,7 +79,7 @@ const Kiosk = () => {
   // Hooks
   const onlineQuery = useOnlineQuery();
   useOnlineAutoRefetch();
-  const isOnline = false; // onlineQuery.data?.online ?? false;
+  const isOnline = onlineQuery.data?.online ?? false;
 
   const wifiQuery = useWifiScanQuery(connectionStep === "wifi");
   const wifiList = useMemo(() => wifiQuery.data ?? [], [wifiQuery.data]);
