@@ -133,17 +133,18 @@ const Kiosk = () => {
   const disconnectWifi = useWifiDisconnect();
   const forgetWifi = useWifiForget();
 
+  // Will be handle in future
   // Hidden config hotkey
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.altKey && e.key.toLowerCase() === "e") {
-        e.preventDefault();
-        setShowConfig(true);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  // useEffect(() => {
+  //   const onKey = (e: KeyboardEvent) => {
+  //     if (e.ctrlKey && e.altKey && e.key.toLowerCase() === "e") {
+  //       e.preventDefault();
+  //       setShowConfig(true);
+  //     }
+  //   };
+  //   window.addEventListener("keydown", onKey);
+  //   return () => window.removeEventListener("keydown", onKey);
+  // }, []);
 
   const handleConfigAuth = () => {
     if (
@@ -217,8 +218,10 @@ const Kiosk = () => {
   if (isOnline && connectionStep === "status") {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-600 to-purple-700 flex items-center justify-center p-4 bg-white">
-        <div className="kiosk-overlay rounded-2xl p-8 max-w-md w-full text-center
-                bg-white shadow-2xl ring-1 ring-gray-200">
+        <div
+          className="kiosk-overlay rounded-2xl p-8 max-w-md w-full text-center
+                bg-white shadow-2xl ring-1 ring-gray-200"
+        >
           <div className="animate-pulse-glow mb-6 rounded-[12px]">
             <CheckCircle className="w-20 h-20 mx-auto text-green-400" />
           </div>
@@ -231,12 +234,12 @@ const Kiosk = () => {
           </p>
 
           <div className="space-y-4">
-            <Button
+            {/* <Button
               onClick={handleLandingPageRedirect}
               className="w-full bg-white text-blue-600 hover:bg-white/90"
             >
               Continue to Landing Page
-            </Button>
+            </Button> */}
             <Button
               variant="outline"
               onClick={() => navigate("/")}
@@ -1131,10 +1134,20 @@ const Kiosk = () => {
                 Access Configuration
               </Button>
             </div>
+            {/* <div className="text-center mt-6">
+              <p className="text-black/50 text-sm">
+                Press Ctrl+Alt+E to access configuration
+              </p>
+              {sysInfo.data?.hostName && (
+                <p className="text-black/40 text-xs mt-1">
+                  {sysInfo.data.hostName} • {sysInfo.data.operatingSystem}
+                </p>
+              )}
+            </div> */}
           </DialogContent>
         </Dialog>
 
-        <div className="text-center mt-6">
+        {/* <div className="text-center mt-6">
           <p className="text-black/50 text-sm">
             Press Ctrl+Alt+E to access configuration
           </p>
@@ -1143,7 +1156,7 @@ const Kiosk = () => {
               {sysInfo.data.hostName} • {sysInfo.data.operatingSystem}
             </p>
           )}
-        </div>
+        </div> */}
       </div>
     </div>
   );

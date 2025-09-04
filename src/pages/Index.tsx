@@ -32,8 +32,26 @@ const Index = () => {
           </Card>
         </div>
 
-        <div className="text-sm text-muted-foreground">
-          <p>Built for Ubuntu 22.04 LTS+ on Intel mini PC architecture</p>
+        <div className="mt-8">
+          <div className="p-4 rounded-xl from-slate-50 to-blue-50 shadow-sm text-center">
+            <p className="text-sm font-medium text-gray-700">
+              Built for{" "}
+              <span className="text-blue-600 font-semibold">
+                Ubuntu 22.04 LTS+
+              </span>
+              on{" "}
+              <span className="text-purple-600 font-semibold">
+                Intel mini PC
+              </span>
+            </p>
+            <p className="mt-2 text-xs text-gray-500">
+              Press{" "}
+              <kbd className="px-2 py-1 bg-slate-200 rounded text-gray-700 shadow-inner">
+                Alt + F4
+              </kbd>{" "}
+              to close the application
+            </p>
+          </div>
         </div>
       </div>
     </div>
